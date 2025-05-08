@@ -1,15 +1,111 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" />
-    <title>Блог на Alpine</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <title>Блог с постами</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen p-4">
-<div x-data="{}" class="max-w-3xl mx-auto">
-    <h1 class="text-2xl font-bold mb-4">Привет, Alpine!</h1>
+<body class="bg-[#f1f1f7] min-h-screen p-6">
+<div x-data="blogApp()" class="max-w-5xl mx-auto space-y-6">
+    <form @submit.prevent="addPost"
+          class="bg-[#f9f9fb] border border-gray-100 rounded-2xl shadow-md p-8 space-y-6">
+        <h2 class="text-2xl font-bold text-gray-800">Новый пост</h2>
+
+        <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-600">Заголовок</label>
+            <input x-model="form.title" type="text" placeholder="Введите заголовок"
+                   class="w-full px-4 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-violet-400 bg-white" />
+            <div x-effect="if (form.title.length >= 5) delete errors.title"></div>
+            <template x-if="errors.title">
+                <p class="text-xs text-red-500 mt-1" x-text="errors.title"></p>
+            </template>
+        </div>
+
+        <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-600">Описание</label>
+            <textarea x-model="form.description" rows="3" placeholder="Введите краткое описание"
+                      class="w-full px-4 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-violet-400 bg-white resize-none"></textarea>
+            <div x-effect="if (form.description.trim()) delete errors.description"></div>
+            <template x-if="errors.description">
+                <p class="text-xs text-red-500 mt-1" x-text="errors.description"></p>
+            </template>
+        </div>
+
+        <div class="space-y-1">
+            <label class="text-sm font-medium text-gray-600">Автор</label>
+            <input x-model="form.author_name" type="text" placeholder="Имя автора"
+                   class="w-full px-4 py-2 rounded-lg border outline-none focus:ring-2 focus:ring-violet-400 bg-white" />
+            <div x-effect="if (form.author_name.trim()) delete errors.author_name"></div>
+            <template x-if="errors.author_name">
+                <p class="text-xs text-red-500 mt-1" x-text="errors.author_name"></p>
+            </template>
+        </div>
+
+        <div>
+            <button type="submit"
+                    class="bg-violet-600 hover:bg-violet-700 text-white px-6 py-2 rounded-lg font-semibold transition active:scale-95">
+                Добавить пост
+            </button>
+        </div>
+    </form>
+
+    <div class="relative">
+        <input type="text" x-model="search"
+               placeholder="Поиск по заголовку…"
+               class="w-full px-4 py-3 pr-12 rounded-xl border-2 border-violet-400 bg-[#f9f9fb]
+                    shadow-sm focus:outline-none focus:ring-2 focus:ring-violet-500 transition" />
+        <button
+                x-show="search"
+                @click="search=''"
+                class="absolute right-3 top-1/2 -translate-y-1/2 bg-violet-100 text-violet-600
+                 hover:bg-violet-500 hover:text-white w-7 h-7 flex items-center justify-center rounded-full transition"
+                aria-label="Очистить">
+            ×
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+        <template x-for="post in filteredPosts" :key="post.id">
+            <div x-transition
+                 class="bg-[#f9f9fb] shadow rounded-2xl p-6 space-y-3 flex flex-col justify-between">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900" x-text="post.title"></h3>
+                    <p class="text-sm text-gray-700" x-text="post.description"></p>
+                </div>
+                <div class="text-sm text-gray-500">
+                    Автор: <span x-text="post.author_name"></span><br>
+                    <span x-text="new Date(post.created_at).toLocaleDateString()"></span>
+                </div>
+                <div class="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+                    <button @click="likePost(post.id)"
+                            class="text-violet-600 text-sm flex items-center gap-1 hover:scale-110 transition">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor"
+                             stroke-width="2"
+                             :class="post.likes_count > 0 ? 'fill-violet-600 text-violet-600' : 'fill-none text-violet-600'"
+                             class="w-5 h-5 transition">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                  d="M21 8.25c0-2.485-2.1-4.5-4.69-4.5
+                      -1.935 0-3.597 1.126-4.312 2.733
+                      -.715-1.607-2.377-2.733-4.313-2.733
+                      C5.1 3.75 3 5.765 3 8.25
+                      c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+                        </svg>
+                        <span x-text="post.likes_count"></span>
+                    </button>
+                    <button @click="deletePost(post.id)"
+                            class="bg-red-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-red-700 active:scale-95 transition">
+                        Удалить
+                    </button>
+                </div>
+            </div>
+        </template>
+    </div>
 </div>
+
+<script src="./app.js"></script>
 </body>
 </html>
